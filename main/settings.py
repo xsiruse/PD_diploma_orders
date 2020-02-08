@@ -49,7 +49,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'PD_diploma_orders.urls'
+ROOT_URLCONF = 'main.urls'
 
 TEMPLATES = [
     {
