@@ -25,7 +25,7 @@ class User(AbstractUser):
 class Shop(models.Model):
     name = models.CharField(max_length=55, verbose_name="Название")
     url = models.URLField(verbose_name="Ссылка", null=True, blank=True)
-    filename = models.FilePathField(verbose_name="Имя файла")
+    # filename = models.FilePathField(verbose_name="Имя файла")
 
     class Meta:
         verbose_name = 'Магазин'
@@ -49,7 +49,7 @@ class Category(models.Model):
 
 class Product(models.Model):
     name = models.CharField(max_length=55, verbose_name="Название")
-    category = models.ForeignKey(Category, verbose_name='Категория', on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, verbose_name='Категория', on_delete=models.CASCADE, null=True, blank=True)
 
     class Meta:
         verbose_name = 'Продукт'
@@ -106,6 +106,9 @@ class ProductParameter(models.Model):
                                   related_name='product_parameters',
                                   on_delete=models.CASCADE,
                                   blank=True)
+    value = models.CharField(verbose_name='Значение',
+                             max_length=100,
+                             blank=True)
 
     class Meta:
         verbose_name = 'Параметр'
