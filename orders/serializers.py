@@ -1,7 +1,13 @@
 from rest_framework.relations import StringRelatedField
 from rest_framework.serializers import ModelSerializer
 
-from orders.models import Shop, Product, ProductParameter, ProductInfo, Category
+from orders.models import Shop, Product, ProductParameter, ProductInfo, Category, User
+
+
+class UserSerializer(ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'
 
 
 class ShopSerializer(ModelSerializer):

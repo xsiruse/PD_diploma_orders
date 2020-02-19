@@ -1,7 +1,32 @@
 from django.contrib.admin import register, ModelAdmin
+from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from django.utils.translation import ugettext_lazy as _
 
+from .models import User
 from orders.models import Shop, Category, Product, ProductInfo, Parameter, ProductParameter, Order, OrderItem, \
     Contact
+
+
+@register(User)
+class UserAdmin(DjangoUserAdmin):
+    """Define admin model for custom User model with no email field."""
+
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        (_('Personal info'), {'fields': ('first_name', 'last_name')}),
+        (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser',
+                                       'groups', )}),
+        (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'password1', 'password2'),
+        }),
+    )
+    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active')
+    search_fields = ('email', 'first_name', 'last_name')
+    ordering = ('email',)
 
 
 @register(Shop)
@@ -41,7 +66,7 @@ class OrderAdmin(ModelAdmin):
 
 @register(OrderItem)
 class OrderItemAdmin(ModelAdmin):
-   OrderItem._meta.verbose_name_plural = "Единицы заказов ( %s ) " % OrderItem.objects.all().count()
+    OrderItem._meta.verbose_name_plural = "Единицы заказов ( %s ) " % OrderItem.objects.all().count()
 
 
 @register(Contact)

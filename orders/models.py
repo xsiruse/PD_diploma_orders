@@ -1,5 +1,7 @@
+from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils.translation import ugettext_lazy as _
 
 STATE_CHOICES = (
     ('basket', 'Статус корзины...'),
@@ -18,13 +20,60 @@ USER_TYPE_CHOICES = (
 )
 
 
+class UserManager(BaseUserManager):
+    """Define a model manager for User model with no username field."""
+
+    use_in_migrations = True
+
+    def _create_user(self, email, password, **extra_fields):
+        """Create and save a User with the given email and password."""
+        if not email:
+            raise ValueError('The given email must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_user(self, email, password=None, **extra_fields):
+        """Create and save a regular User with the given email and password."""
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
+        return self._create_user(email, password, **extra_fields)
+
+    def create_superuser(self, email, password, **extra_fields):
+        """Create and save a SuperUser with the given email and password."""
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self._create_user(email, password, **extra_fields)
+
+
 class User(AbstractUser):
-    pass
+    """User model."""
+
+    username = None
+    email = models.EmailField(_('email address'), unique=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    objects = UserManager()  ## This is the new line in the User model. ##
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
 
 
 class Shop(models.Model):
     name = models.CharField(max_length=55, verbose_name="Название")
     url = models.URLField(verbose_name="Ссылка", null=True, blank=True)
+    state = models.BooleanField(verbose_name='статус получения заказов', default=True)
     # filename = models.FilePathField(verbose_name="Имя файла")
 
     class Meta:
@@ -115,7 +164,7 @@ class ProductParameter(models.Model):
         verbose_name_plural = 'Перечень параметров продукта'
 
     def __str__(self):
-        return self.parameter
+        return f'%s для %s = %s' % (self.parameter, self.product_info, self.value)
 
 
 class Order(models.Model):
