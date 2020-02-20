@@ -181,15 +181,21 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, verbose_name='Заказ',
+    order = models.ForeignKey(Order, verbose_name='Заказ', related_name='ordered_items',
                               on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, verbose_name='Продукт', on_delete=models.CASCADE)
+    product_info = models.ForeignKey(ProductInfo, verbose_name='Информация о продукте',
+                                     related_name='ordered_items',
+                                     blank=True,
+                                     on_delete=models.CASCADE)
     shop = models.ForeignKey(Shop, verbose_name='Магазин', on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(verbose_name='Количество')
 
     class Meta:
         verbose_name = 'Позтция заказа'
         verbose_name_plural = 'Позтции в заказе'
+        constraints = [
+            models.UniqueConstraint(fields=['order_id', 'product_info'], name='unique_order_item'),
+        ]
 
 
 class Contact(models.Model):
