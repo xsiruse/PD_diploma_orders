@@ -58,8 +58,7 @@ ROOT_URLCONF = 'main.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')]
-        ,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -85,10 +84,10 @@ DATABASES = {
     }
 }
 
-# AUTH_USER_MODEL = 'django.conf.settings'
+
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
-
+AUTH_USER_MODEL = 'orders.User'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -135,5 +134,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Email settings
+
+EMAIL_HOST = 'smtp.mail.ru'
+EMAIL_HOST_USER = 'diplom-rezerv@mail.ru'
+EMAIL_HOST_PASSWORD = 'QWEdsa123#@!'
+EMAIL_PORT = '465'
+EMAIL_USE_SSL = True
+SERVER_EMAIL = EMAIL_HOST_USER
 
 

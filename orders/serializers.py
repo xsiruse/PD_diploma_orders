@@ -1,7 +1,7 @@
 from rest_framework.relations import StringRelatedField
 from rest_framework.serializers import ModelSerializer, IntegerField
 
-from orders.models import Shop, Product, ProductParameter, ProductInfo, Category, User, OrderItem, Order
+from orders.models import Shop, Product, ProductParameter, ProductInfo, Category, User, OrderItem, Order, Contact
 
 
 class UserSerializer(ModelSerializer):
@@ -81,4 +81,10 @@ class OrderSerializer(ModelSerializer):
 
 
 class ContactSerializer(ModelSerializer):
-    pass
+    class Meta:
+        model = Contact
+        fields = '__all__'
+        read_only_fields = ('id',)
+        extra_kwargs = {
+            'user': {'write_only': True}
+        }

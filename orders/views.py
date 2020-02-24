@@ -8,14 +8,18 @@ from requests import get
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from yaml import load as load_yaml, Loader
-from orders.models import Product, Shop, ProductInfo, Parameter, ProductParameter, Category, Order, OrderItem
+from orders.models import Product, Shop, ProductInfo, Parameter, ProductParameter, Category, Order, OrderItem, \
+    ConfirmEmailToken, Contact, User
 from orders.serializers import UserSerializer, ProductInfoSerializer, CategorySerializer, ShopSerializer, \
-    ProductSerializer, OrderSerializer, OrderItemSerializer
+    ProductSerializer, OrderSerializer, OrderItemSerializer, ContactSerializer
 from ujson import loads as load_json
+from django.utils.translation import ugettext_lazy as _
+from orders.signals import new_order, new_user_registered
+from django_rest_passwordreset.signals import reset_password_token_created
 
 
 class PartnerUpdate(APIView):
@@ -31,7 +35,7 @@ class PartnerUpdate(APIView):
             try:
                 validate_url(url)
             except ValidationError as e:
-                return JsonResponse({'Status': False, 'Error': str(e)})
+                return JsonResponse({'Status': 404, 'Error': str(e)})
             else:
                 stream = get(url).content
 
@@ -58,15 +62,16 @@ class PartnerUpdate(APIView):
                                                         parameter_id=parameter_object.id,
                                                         value=value)
 
-                return JsonResponse({'Status': 'Success'})
+                return JsonResponse({'Status': 200, 'Message': 'Success'})
 
-        return JsonResponse({'Status': 'Fail', 'Errors': 'Не указаны все необходимые аргументы'})
+        return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
 
 
 class LoginAccount(APIView):
     """
     Вход
     """
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
 
@@ -77,21 +82,30 @@ class LoginAccount(APIView):
                 if user.is_active:
                     token, _ = Token.objects.get_or_create(user=user)
 
-                    return JsonResponse({'Status': True, 'Token': token.key})
+                    return JsonResponse({'Status': 403, 'Token': token.key})
 
-            return JsonResponse({'Status': False, 'Errors': 'Неверно указаны email|пароль либо пользователь еще не '
-                                                            'зарегистрирован'})
+            return JsonResponse({'Status': 404, 'Errors': 'Неверно указаны email|пароль либо пользователь еще не '
+                                                          'зарегистрирован'})
 
-        return JsonResponse({'Status': False, 'Errors': 'Указаны не все необходимые поля'})
+        return JsonResponse({'Status': 411, 'Errors': 'Указаны не все необходимые поля'})
 
 
 class RegisterAccount(APIView):
     """
     Регистрация
     """
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        if {'first_name', 'last_name', 'email', 'password', 'company', 'position'}.issubset(request.data):
+        # print(request.data)
+        if {'first_name',
+            'last_name',
+            'email',
+            'password',
+            'company',
+            'position',
+            } \
+                .issubset(request.data):
             errors = {}
             try:
                 validate_password(request.data['password'])
@@ -99,7 +113,7 @@ class RegisterAccount(APIView):
                 error_array = []
                 for item in password_error:
                     error_array.append(item)
-                return JsonResponse({'Status': False, 'Errors': {'password': error_array}})
+                return JsonResponse({'Status': 403, 'Errors': {'password': error_array}})
             else:
                 request.data._mutable = True
                 request.data.update({})
@@ -108,11 +122,115 @@ class RegisterAccount(APIView):
                     user = user_serializer.save()
                     user.set_password(request.data['password'])
                     user.save()
-                    return JsonResponse({'Status': True})
+                    new_user_registered.send(sender=self.__class__, user_id=user.id, url=request.META['HTTP_HOST'])
+                    return JsonResponse({'Status': 200, 'Message': 'User registered successfully. '
+                                                                   'Check %s' % request.data['email']})
                 else:
-                    return JsonResponse({'Status': False, 'Errors': user_serializer.errors})
+                    return JsonResponse({'Status': 404, 'Errors': user_serializer.errors})
 
-        return JsonResponse({'Status': False, 'Errors': 'Указаны не все необходимые поля'})
+        return JsonResponse({'Status': 411, 'Errors': 'Указаны не все необходимые поля'})
+
+
+class ConfirmAccount(APIView):
+    """
+    Подтверждение регистрации
+    """
+    permission_classes = [AllowAny]
+
+    # Регистрация методом POST
+    def post(self, request, *args, **kwargs):
+        # print(request.data)
+        user = User.objects.filter(email=request.data['email'], is_active=True)
+        if user:
+            return JsonResponse({'Status': 200, 'Message': _('Confirmation has been done earlier')})
+
+        # проверяем обязательные аргументы
+        if {'email', 'token'}.issubset(request.data):
+
+            token = ConfirmEmailToken.objects.filter(user__email=request.data['email'],
+                                                     key=request.data['token']).first()
+            if token:
+                token.user.is_active = True
+                token.user.save()
+                # reset_password_token_created.send(sender=self.__class__, user_id=user.id)
+                token.delete()
+                return JsonResponse({'Status': 200, 'Message': _('Registration complete successfully')})
+            else:
+                return JsonResponse({'Status': 403, 'Errors': _('Неправильно указан токен или email')})
+
+        return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
+
+
+class ContactView(APIView):
+    """
+    Класс для работы с контактами покупателей
+    """
+
+    # получить мои контакты
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
+        contact = Contact.objects.filter(
+            user_id=request.user.id)
+        serializer = ContactSerializer(contact, many=True)
+        return Response(serializer.data)
+
+    # добавить новый контакт
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
+
+        if {'city', 'street', 'phone'}.issubset(request.data):
+            request.data._mutable = True
+            request.data.update({'user': request.user.id})
+            serializer = ContactSerializer(data=request.data)
+
+            if serializer.is_valid():
+                serializer.save()
+                return JsonResponse({'Status': 200, 'Message': 'Contact updated successfully'})
+            else:
+                JsonResponse({'Status': 404, 'Errors': serializer.errors})
+
+        return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
+
+    # удалить контакт
+    def delete(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
+
+        items_sting = request.data.get('items')
+        if items_sting:
+            items_list = items_sting.split(',')
+            query = Q()
+            objects_deleted = False
+            for contact_id in items_list:
+                if contact_id.isdigit():
+                    query = query | Q(user_id=request.user.id, id=contact_id)
+                    objects_deleted = True
+
+            if objects_deleted:
+                deleted_count = Contact.objects.filter(query).delete()[0]
+                return JsonResponse({'Status': 200, 'Удалено объектов': deleted_count})
+        return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
+
+    # редактировать контакт
+    def put(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
+
+        if 'id' in request.data:
+            if request.data['id'].isdigit():
+                contact = Contact.objects.filter(id=request.data['id'], user_id=request.user.id).first()
+                print(contact)
+                if contact:
+                    serializer = ContactSerializer(contact, data=request.data, partial=True)
+                    if serializer.is_valid():
+                        serializer.save()
+                        return JsonResponse({'Status': 200})
+                    else:
+                        JsonResponse({'Status': 404, 'Errors': serializer.errors})
+
+        return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
 
 
 class CategoryView(ListAPIView):
@@ -214,7 +332,7 @@ class BasketView(APIView):
                         try:
                             serializer.save()
                         except IntegrityError as error:
-                            return JsonResponse({'Status': False, 'Errors': str(error)})
+                            return JsonResponse({'Status': 404, 'Errors': str(error)})
                         else:
                             objects_created += 1
 
@@ -267,3 +385,44 @@ class BasketView(APIView):
 
                 return JsonResponse({'Status': 200, 'Обновлено объектов': objects_updated})
         return JsonResponse({'Status': 411, 'Errors': 'Не все необходимые аргументы указаны'})
+
+
+class OrderView(APIView):
+    """
+    Класс для получения и размешения заказов пользователями
+    """
+
+    # получить мои заказы
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
+        order = Order.objects.filter(
+            user_id=request.user.id).exclude(state='basket').prefetch_related(
+            'ordered_items__product_info__product__category',
+            'ordered_items__product_info__product_parameters__parameter').select_related('contact').annotate(
+            total_sum=Sum(F('ordered_items__quantity') * F('ordered_items__product_info__price'))).distinct()
+
+        serializer = OrderSerializer(order, many=True)
+        return Response(serializer.data)
+
+    # разместить заказ из корзины
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
+
+        if {'id', 'contact'}.issubset(request.data):
+            if request.data['id'].isdigit():
+                try:
+                    is_updated = Order.objects.filter(
+                        user_id=request.user.id, id=request.data['id']).update(
+                        contact_id=request.data['contact'],
+                        state='new')
+                except IntegrityError as error:
+                    print(error)
+                    return JsonResponse({'Status': 422, 'Errors': 'Неправильно указаны аргументы'})
+                else:
+                    if is_updated:
+                        new_order.send(sender=self.__class__, user_id=request.user.id)
+                        return JsonResponse({'Status': 200})
+
+        return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})

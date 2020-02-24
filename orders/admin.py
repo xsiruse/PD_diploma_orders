@@ -2,7 +2,7 @@ from django.contrib.admin import register, ModelAdmin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import ugettext_lazy as _
 
-from .models import User
+from .models import User, ConfirmEmailToken
 from orders.models import Shop, Category, Product, ProductInfo, Parameter, ProductParameter, Order, OrderItem, \
     Contact
 
@@ -15,7 +15,7 @@ class UserAdmin(DjangoUserAdmin):
         (None, {'fields': ('email', 'password')}),
         (_('Personal info'), {'fields': ('first_name', 'last_name')}),
         (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser',
-                                       'groups', )}),
+                                       'groups',)}),
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
     )
     add_fieldsets = (
@@ -27,6 +27,11 @@ class UserAdmin(DjangoUserAdmin):
     list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active')
     search_fields = ('email', 'first_name', 'last_name')
     ordering = ('email',)
+
+
+@register(ConfirmEmailToken)
+class ConfirmEmailTokenAdmin(ModelAdmin):
+    list_display = ('user', 'key', 'created_at',)
 
 
 @register(Shop)
