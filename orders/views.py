@@ -1,3 +1,5 @@
+from distutils.util import strtobool
+
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import URLValidator
@@ -19,7 +21,6 @@ from orders.serializers import UserSerializer, ProductInfoSerializer, CategorySe
 from ujson import loads as load_json
 from django.utils.translation import ugettext_lazy as _
 from orders.signals import new_order, new_user_registered
-from django_rest_passwordreset.signals import reset_password_token_created
 
 
 class PartnerUpdate(APIView):
@@ -28,6 +29,8 @@ class PartnerUpdate(APIView):
     """
 
     def post(self, request, *args, **kwargs):
+        if request.user.type != 'shop':
+            return JsonResponse({'Status': 403, 'Error': 'Только для магазинов'})
 
         url = request.data.get('url')
         if url:
@@ -67,6 +70,37 @@ class PartnerUpdate(APIView):
         return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
 
 
+class PartnerState(APIView):
+    """
+    сменить состояние доступности поставщика
+    """
+
+    # получить текущий статус
+    def get(self, request, *args, **kwargs):
+
+        if request.user.type != 'shop':
+            return JsonResponse({'Status': False, 'Error': 'Только для магазинов'}, status=403)
+
+        shop = request.user.shop
+        serializer = ShopSerializer(shop)
+        return Response(serializer.data)
+
+    # изменить текущий статус
+    def post(self, request, *args, **kwargs):
+
+        if request.user.type != 'shop':
+            return JsonResponse({'Status': 403, 'Error': 'Только для магазинов'}, status=403)
+        state = request.data.get('state')
+        if state:
+            try:
+                Shop.objects.filter(user_id=request.user.id).update(state=strtobool(state))
+                return JsonResponse({'Status': 200, 'Message': 'State changed to '})
+            except ValueError as error:
+                return JsonResponse({'Status': 422, 'Errors': str(error)})
+
+        return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
+
+
 class LoginAccount(APIView):
     """
     Вход
@@ -82,7 +116,7 @@ class LoginAccount(APIView):
                 if user.is_active:
                     token, _ = Token.objects.get_or_create(user=user)
 
-                    return JsonResponse({'Status': 403, 'Token': token.key})
+                    return JsonResponse({'Status': 200, 'Token': token.key})
 
             return JsonResponse({'Status': 404, 'Errors': 'Неверно указаны email|пароль либо пользователь еще не '
                                                           'зарегистрирован'})
@@ -168,8 +202,7 @@ class ContactView(APIView):
 
     # получить мои контакты
     def get(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
+
         contact = Contact.objects.filter(
             user_id=request.user.id)
         serializer = ContactSerializer(contact, many=True)
@@ -177,8 +210,6 @@ class ContactView(APIView):
 
     # добавить новый контакт
     def post(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
 
         if {'city', 'street', 'phone'}.issubset(request.data):
             request.data._mutable = True
@@ -195,8 +226,6 @@ class ContactView(APIView):
 
     # удалить контакт
     def delete(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
 
         items_sting = request.data.get('items')
         if items_sting:
@@ -215,8 +244,6 @@ class ContactView(APIView):
 
     # редактировать контакт
     def put(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
 
         if 'id' in request.data:
             if request.data['id'].isdigit():
@@ -300,28 +327,25 @@ class BasketView(APIView):
 
     # получить корзину
     def get(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({'Status': 401, 'Error': 'Log in required'}, status=403)
         basket = Order.objects.filter(
-            user_id=request.user.id, status='basket').prefetch_related(
+            user_id=request.user.id, state='basket').prefetch_related(
             'ordered_items__product_info__product__category',
             'ordered_items__product_info__product_parameters__parameter').annotate(
             total_sum=Sum(F('ordered_items__quantity') * F('ordered_items__product_info__price'))).distinct()
 
         serializer = OrderSerializer(basket, many=True)
-        return JsonResponse({'Status': 200, 'Data': serializer.data})
+        return Response(serializer.data)
 
-    # редактировать корзину
+        # редактировать корзину
+
     def post(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({'Status': 401, 'Error': 'Log in required'}, status=403)
 
-        items_string = request.data.get('items')
-        if items_string:
+        items_sting = request.data.get('items')
+        if items_sting:
             try:
-                items_dict = load_json(items_string)
+                items_dict = load_json(items_sting)
             except ValueError:
-                JsonResponse({'Status': 422, 'Errors': 'Неверный формат запроса'})
+                JsonResponse({'Status': False, 'Errors': 'Неверный формат запроса'})
             else:
                 basket, _ = Order.objects.get_or_create(user_id=request.user.id, status='basket')
                 objects_created = 0
@@ -345,8 +369,6 @@ class BasketView(APIView):
 
     # удалить товары из корзины
     def delete(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({'Status': 401, 'Error': 'Log in required'}, status=403)
 
         items_string = request.data.get('items')
         if items_string:
@@ -366,8 +388,6 @@ class BasketView(APIView):
 
     # изменить кол-во позиции в корзину
     def patch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({'Status': 401, 'Error': 'Log in required'}, status=403)
 
         items_string = request.data.get('items')
         if items_string:
@@ -392,23 +412,28 @@ class OrderView(APIView):
     Класс для получения и размешения заказов пользователями
     """
 
-    # получить мои заказы
+    # получить заказы
     def get(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
-        order = Order.objects.filter(
-            user_id=request.user.id).exclude(state='basket').prefetch_related(
-            'ordered_items__product_info__product__category',
-            'ordered_items__product_info__product_parameters__parameter').select_related('contact').annotate(
-            total_sum=Sum(F('ordered_items__quantity') * F('ordered_items__product_info__price'))).distinct()
+        # для магазина
+        if request.user.type == 'shop':
+            order = Order.objects.filter(
+                ordered_items__product_info__shop__user_id=request.user.id).exclude(state='basket').prefetch_related(
+                'ordered_items__product_info__product__category',
+                'ordered_items__product_info__product_parameters__parameter').select_related('contact').annotate(
+                total_sum=Sum(F('ordered_items__quantity') * F('ordered_items__product_info__price'))).distinct()
+        # для клиента
+        else:
+            order = Order.objects.filter(
+                user_id=request.user.id).exclude(state='basket').prefetch_related(
+                'ordered_items__product_info__product__category',
+                'ordered_items__product_info__product_parameters__parameter').select_related('contact').annotate(
+                total_sum=Sum(F('ordered_items__quantity') * F('ordered_items__product_info__price'))).distinct()
 
         serializer = OrderSerializer(order, many=True)
         return Response(serializer.data)
 
     # разместить заказ из корзины
     def post(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({'Status': 403, 'Error': 'Log in required'}, status=403)
 
         if {'id', 'contact'}.issubset(request.data):
             if request.data['id'].isdigit():

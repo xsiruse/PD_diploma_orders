@@ -16,7 +16,7 @@ Including another URLconf
 from django_rest_passwordreset.views import reset_password_request_token, reset_password_confirm
 
 from orders.views import PartnerUpdate, LoginAccount, RegisterAccount, ProductInfoView, ShopView, CategoryView, \
-    ProductView, BasketView, ContactView, OrderView, ConfirmAccount
+    ProductView, BasketView, ContactView, OrderView, ConfirmAccount, PartnerState
 from django.urls import path
 
 app_name = 'orders'
@@ -24,10 +24,12 @@ app_name = 'orders'
 
 urlpatterns = [
     path('partner/update', PartnerUpdate.as_view(), name='partner-update'),
+    path('partner/state', PartnerState.as_view(), name='partner-state'),
+    path('partner/orders', OrderView.as_view(), name='partner-orders'),
     path('user/login', LoginAccount.as_view(), name='user-login'),
     path('user/register', RegisterAccount.as_view(), name='user-register'),
-    path('user/contact', ContactView.as_view(), name='user-contact'),
     path('user/register/confirm', ConfirmAccount.as_view(), name='user-register-confirm'),
+    path('user/contact', ContactView.as_view(), name='user-contact'),
     path('categories', CategoryView.as_view(), name='categories'),
     path('shops', ShopView.as_view(), name='shops'),
     path('products', ProductView.as_view(), name='product'),

@@ -60,11 +60,15 @@ class User(AbstractUser):
 
     username = None
     email = models.EmailField(_('email address'), unique=True)
+    type = models.CharField(verbose_name='Тип пользователя', choices=USER_TYPE_CHOICES, max_length=5, default='buyer')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
     objects = UserManager()  ## This is the new line in the User model. ##
+
+    def __str__(self):
+        return f'{self.first_name} {self.last_name}'
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -113,7 +117,11 @@ class ConfirmEmailToken(models.Model):
 class Shop(models.Model):
     name = models.CharField(max_length=55, verbose_name="Название")
     url = models.URLField(verbose_name="Ссылка", null=True, blank=True)
+    user = models.OneToOneField(User, verbose_name='Пользователь',
+                                blank=True, null=True,
+                                on_delete=models.CASCADE)
     state = models.BooleanField(verbose_name='статус получения заказов', default=True)
+
     # filename = models.FilePathField(verbose_name="Имя файла")
 
     class Meta:
@@ -257,4 +265,3 @@ class Contact(models.Model):
 
     def __str__(self):
         return f'{self.city} {self.street} {self.house}'
-
