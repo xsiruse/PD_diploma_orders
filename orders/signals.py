@@ -1,6 +1,5 @@
 from django.core.mail import EmailMultiAlternatives
 from django.dispatch import Signal, receiver
-from django.urls import reverse
 from django_rest_passwordreset.signals import reset_password_token_created
 
 from main import settings
