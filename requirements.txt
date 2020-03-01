@@ -5,13 +5,14 @@ celery==4.4.0
 certifi==2019.11.28
 chardet==3.0.4
 Django==3.0.3
-django-rest-passwordreset==1.1.0
+django-rest-passwordreset
 djangorestframework==3.11.0
 idna==2.9
 importlib-metadata==1.5.0
 kombu==4.6.7
 pytz==2019.3
 PyYAML==5.3
+redis>=3.4
 requests==2.23.0
 sqlparse==0.3.0
 ujson==1.35
