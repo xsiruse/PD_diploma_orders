@@ -116,7 +116,7 @@ class LoginAccount(APIView):
             if user is not None:
                 if user.is_active:
                     token, _ = Token.objects.get_or_create(user=user)
-                    # logged_in.send(sender=self.__class__, user_id=user.id)
+                    logged_in.send(sender=self.__class__, user_id=user.id)
 
                     return JsonResponse({'Status': 200, 'Token': token.key})
 
