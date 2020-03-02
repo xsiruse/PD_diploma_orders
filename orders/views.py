@@ -13,6 +13,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 from yaml import load as load_yaml, Loader
 from orders.models import Product, Shop, ProductInfo, Parameter, ProductParameter, Category, Order, OrderItem, \
     ConfirmEmailToken, Contact, User
@@ -196,69 +197,82 @@ class ConfirmAccount(APIView):
         return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
 
 
-class ContactView(APIView):
-    """
-    Класс для работы с контактами покупателей
-    """
+# class ContactView(APIView):
+#     """
+#     Класс для работы с контактами покупателей
+#     """
+#
+#     # получить мои контакты
+#     def get(self, request, *args, **kwargs):
+#
+#         contact = Contact.objects.filter(
+#             user_id=request.user.id)
+#         serializer = ContactSerializer(contact, many=True)
+#         return Response(serializer.data)
+#
+#     # добавить новый контакт
+#     def post(self, request, *args, **kwargs):
+#
+#         if {'city', 'street', 'phone'}.issubset(request.data):
+#             request.data._mutable = True
+#             request.data.update({'user': request.user.id})
+#             serializer = ContactSerializer(data=request.data)
+#
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 return JsonResponse({'Status': 200, 'Message': 'Contact updated successfully'})
+#             else:
+#                 JsonResponse({'Status': 404, 'Errors': serializer.errors})
+#
+#         return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
+#
+#     # удалить контакт
+#     def delete(self, request, *args, **kwargs):
+#
+#         items_sting = request.data.get('items')
+#         if items_sting:
+#             items_list = items_sting.split(',')
+#             query = Q()
+#             objects_deleted = False
+#             for contact_id in items_list:
+#                 if contact_id.isdigit():
+#                     query = query | Q(user_id=request.user.id, id=contact_id)
+#                     objects_deleted = True
+#
+#             if objects_deleted:
+#                 deleted_count = Contact.objects.filter(query).delete()[0]
+#                 return JsonResponse({'Status': 200, 'Удалено объектов': deleted_count})
+#         return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
+#
+#     # редактировать контакт
+#     def put(self, request, *args, **kwargs):
+#
+#         if 'id' in request.data:
+#             if request.data['id'].isdigit():
+#                 contact = Contact.objects.filter(id=request.data['id'], user_id=request.user.id).first()
+#                 print(contact)
+#                 if contact:
+#                     serializer = ContactSerializer(contact, data=request.data, partial=True)
+#                     if serializer.is_valid():
+#                         serializer.save()
+#                         return JsonResponse({'Status': 200})
+#                     else:
+#                         JsonResponse({'Status': 404, 'Errors': serializer.errors})
+#
+#         return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
 
-    # получить мои контакты
-    def get(self, request, *args, **kwargs):
+# Пример ViewSet
+class ContactViewSet(ModelViewSet):
+    # permission_classes = [AllowAny]
+    serializer_class = ContactSerializer
 
-        contact = Contact.objects.filter(
-            user_id=request.user.id)
-        serializer = ContactSerializer(contact, many=True)
-        return Response(serializer.data)
-
-    # добавить новый контакт
-    def post(self, request, *args, **kwargs):
-
-        if {'city', 'street', 'phone'}.issubset(request.data):
-            request.data._mutable = True
-            request.data.update({'user': request.user.id})
-            serializer = ContactSerializer(data=request.data)
-
-            if serializer.is_valid():
-                serializer.save()
-                return JsonResponse({'Status': 200, 'Message': 'Contact updated successfully'})
-            else:
-                JsonResponse({'Status': 404, 'Errors': serializer.errors})
-
-        return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
-
-    # удалить контакт
-    def delete(self, request, *args, **kwargs):
-
-        items_sting = request.data.get('items')
-        if items_sting:
-            items_list = items_sting.split(',')
-            query = Q()
-            objects_deleted = False
-            for contact_id in items_list:
-                if contact_id.isdigit():
-                    query = query | Q(user_id=request.user.id, id=contact_id)
-                    objects_deleted = True
-
-            if objects_deleted:
-                deleted_count = Contact.objects.filter(query).delete()[0]
-                return JsonResponse({'Status': 200, 'Удалено объектов': deleted_count})
-        return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
-
-    # редактировать контакт
-    def put(self, request, *args, **kwargs):
-
-        if 'id' in request.data:
-            if request.data['id'].isdigit():
-                contact = Contact.objects.filter(id=request.data['id'], user_id=request.user.id).first()
-                print(contact)
-                if contact:
-                    serializer = ContactSerializer(contact, data=request.data, partial=True)
-                    if serializer.is_valid():
-                        serializer.save()
-                        return JsonResponse({'Status': 200})
-                    else:
-                        JsonResponse({'Status': 404, 'Errors': serializer.errors})
-
-        return JsonResponse({'Status': 411, 'Errors': 'Не указаны все необходимые аргументы'})
+    def get_queryset(self):
+        """
+        This view should return CRUD of all the contacts
+        for the currently authenticated user.
+        """
+        user = self.request.user
+        return Contact.objects.filter(user_id=user)
 
 
 class CategoryView(ListAPIView):

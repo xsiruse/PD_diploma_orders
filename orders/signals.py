@@ -15,7 +15,7 @@ new_order = Signal(
     providing_args=['user_id'],
 )
 
-# logged_in = Signal()
+logged_in = Signal()
 
 
 @receiver(reset_password_token_created)
@@ -75,7 +75,7 @@ def new_order_signal(user_id, **kwargs):
     send_email.delay(title, message, from_, to)
 
 
-# @receiver(logged_in)
-# def logged_in_signal(user_id, **kwargs):
-#     print('start')
-#     test.delay()
+@receiver(logged_in)
+def logged_in_signal(user_id, **kwargs):
+    print('start')
+    test.delay()
