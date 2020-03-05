@@ -1,0 +1,54 @@
+shop: test_shop
+categories:
+  - id: 999
+    name: test_cutegory
+
+goods:
+  - id: 999
+    category: 999
+    model: test_model1
+    name: test_model1
+    price: 110000
+    price_rrc: 116990
+    quantity: 14
+    parameters:
+      "Диагональ (дюйм)": 6.5
+      "Разрешение (пикс)": 2688x1242
+      "Встроенная память (Гб)": 512
+      "Цвет": золотистый
+  - id: 998
+    category: 999
+    model: test_model2
+    name: test_model2
+    price: 65000
+    price_rrc: 69990
+    quantity: 9
+    parameters:
+      "Диагональ (дюйм)": 6.1
+      "Разрешение (пикс)": 1792x828
+      "Встроенная память (Гб)": 256
+      "Цвет": красный
+  - id: 997
+    category: 999
+    model: test_model3
+    name: test_model3
+    price: 65000
+    price_rrc: 69990
+    quantity: 5
+    parameters:
+      "Диагональ (дюйм)": 6.1
+      "Разрешение (пикс)": 1792x828
+      "Встроенная память (Гб)": 256
+      "Цвет": черный
+  - id: 996
+    category: 999
+    model: test_model4
+    name: test_model4
+    price: 60000
+    price_rrc: 64990
+    quantity: 7
+    parameters:
+      "Диагональ (дюйм)": 6.1
+      "Разрешение (пикс)": 1792x828
+      "Встроенная память (Гб)": 256
+      "Цвет": синий
