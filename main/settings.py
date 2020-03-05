@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.contenttypes.models.ContentType',
     'rest_framework',
     'rest_framework.authtoken',
     'orders',
