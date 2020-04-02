@@ -28,6 +28,7 @@ class PartnerUpdate(APIView):
     """
     Класс для обновления прайса от поставщика
     """
+    throttle_scope = 'price-list'
 
     def post(self, request, *args, **kwargs):
         if request.user.type != 'shop':
@@ -75,6 +76,7 @@ class PartnerState(APIView):
     """
     сменить состояние доступности поставщика
     """
+    throttle_scope = 'price-list'
 
     # получить текущий статус
     def get(self, request, *args, **kwargs):
@@ -426,6 +428,8 @@ class OrderView(APIView):
     """
     Класс для получения и размешения заказов пользователями
     """
+
+    throttle_scope = 'orders'
 
     # получить заказы
     def get(self, request, *args, **kwargs):

@@ -35,7 +35,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.contenttypes.models.ContentType',
     'rest_framework',
     'rest_framework.authtoken',
     'orders',
@@ -111,6 +110,15 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+            'rest_framework.throttling.ScopedRateThrottle',
+            'rest_framework.throttling.AnonRateThrottle',
+        ],
+        'DEFAULT_THROTTLE_RATES': {
+            'anon': '5/day',  # limits the rate of unauthorised users = limit registrations per day from one source
+            'orders': '10/day',  # limits the byers' rates
+            'price-list': '20/day',  # limits shops' rates
+        }
 
 }
 
