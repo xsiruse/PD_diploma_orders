@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 
 import os
 
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -28,6 +29,7 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -37,9 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'orders',
     'django_rest_passwordreset',
-
+    'orders.apps.OrdersConfig',
 ]
 
 MIDDLEWARE = [
@@ -111,14 +112,14 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_THROTTLE_CLASSES': [
-            'rest_framework.throttling.ScopedRateThrottle',
-            'rest_framework.throttling.AnonRateThrottle',
-        ],
-        'DEFAULT_THROTTLE_RATES': {
-            'anon': '5/day',  # limits the rate of unauthorised users = limit registrations per day from one source
-            'orders': '10/day',  # limits the byers' rates
-            'price-list': '20/day',  # limits shops' rates
-        }
+        'rest_framework.throttling.ScopedRateThrottle',
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '5/day',  # limits the rate of unauthorised users = limit registrations per day from one source
+        'orders': '10/day',  # limits the byers' rates
+        'price-list': '20/day',  # limits shops' rates
+    }
 
 }
 
