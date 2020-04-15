@@ -36,44 +36,53 @@ class ConfirmEmailTokenAdmin(ModelAdmin):
 
 @register(Shop)
 class ShopAdmin(ModelAdmin):
-    Shop._meta.verbose_name_plural = "Магазины ( %s ) " % Shop.objects.all().count()
+    # Shop._meta.verbose_name_plural = "Магазины ( %s ) " % Shop.objects.all().count()
+    pass
 
 
 @register(Category)
 class CategoryAdmin(ModelAdmin):
-    Category._meta.verbose_name_plural = "Категории ( %s ) " % Category.objects.all().count()
+    # Category._meta.verbose_name_plural = "Категории ( %s ) " % Category.objects.all().count()
+    pass
 
 
 @register(Product)
 class ProductAdmin(ModelAdmin):
-    Product._meta.verbose_name_plural = "Продукты ( %s ) " % Product.objects.all().count()
+    # Product._meta.verbose_name_plural = "Продукты ( %s ) " % Product.objects.all().count()
+    pass
 
 
 @register(ProductInfo)
 class ProductInfoAdmin(ModelAdmin):
-    ProductInfo._meta.verbose_name_plural = "Информация о продуктах ( %s ) " % ProductInfo.objects.all().count()
+    # ProductInfo._meta.verbose_name_plural = "Информация о продуктах ( %s ) " % ProductInfo.objects.all().count()
+    pass
 
 
 @register(Parameter)
 class ParameterAdmin(ModelAdmin):
-    Parameter._meta.verbose_name_plural = "Параметры ( %s ) " % Parameter.objects.all().count()
+    # Parameter._meta.verbose_name_plural = "Параметры ( %s ) " % Parameter.objects.all().count()
+    pass
 
 
 @register(ProductParameter)
 class ProductParameterAdmin(ModelAdmin):
-    ProductParameter._meta.verbose_name_plural = "Параметры продуктов ( %s ) " % ProductParameter.objects.all().count()
+    # ProductParameter._meta.verbose_name_plural = "Параметры продуктов ( %s ) " % ProductParameter.objects.all().count()
+    pass
 
 
 @register(Order)
 class OrderAdmin(ModelAdmin):
-    Order._meta.verbose_name_plural = "Заказы ( %s ) " % Order.objects.all().count()
+    # Order._meta.verbose_name_plural = "Заказы ( %s ) " % Order.objects.all().count()
+    pass
 
 
 @register(OrderItem)
 class OrderItemAdmin(ModelAdmin):
-    OrderItem._meta.verbose_name_plural = "Единицы заказов ( %s ) " % OrderItem.objects.all().count()
+    # OrderItem._meta.verbose_name_plural = "Единицы заказов ( %s ) " % OrderItem.objects.all().count()
+    pass
 
 
 @register(Contact)
 class ContactAdmin(ModelAdmin):
-    Contact._meta.verbose_name_plural = "Контакты ( %s ) " % Contact.objects.all().count()
+    # Contact._meta.verbose_name_plural = "Контакты ( %s ) " % Contact.objects.all().count()
+    pass
