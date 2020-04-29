@@ -153,14 +153,14 @@ class RegisterAccount(APIView):
                     error_array.append(item)
                 return JsonResponse({'Status': 403, 'Errors': {'password': error_array}})
             else:
-                request.data._mutable = True
+                # request.data._mutable = True
                 request.data.update({})
                 user_serializer = UserSerializer(data=request.data)
                 if user_serializer.is_valid():
                     user = user_serializer.save()
                     user.set_password(request.data['password'])
                     user.save()
-                    new_user_registered.send(sender=self.__class__, user_id=user.id, url=request.META['HTTP_HOST'])
+                    new_user_registered.send(sender=self.__class__, user_id=user.id)
                     return JsonResponse({'Status': 200, 'Message': 'User registered successfully. '
                                                                    'Check %s' % request.data['email']})
                 else:

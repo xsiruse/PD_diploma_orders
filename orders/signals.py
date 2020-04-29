@@ -36,7 +36,7 @@ def password_reset_token_created_signal(sender, instance, reset_password_token, 
 
 
 @receiver(new_user_registered)
-def new_user_registered_signal(user_id, sender, url, **kwargs):
+def new_user_registered_signal(user_id, sender, **kwargs):
     """
     отправляем письмо с подтрердждением почты
     """
